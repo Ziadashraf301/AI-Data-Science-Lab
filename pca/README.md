@@ -1,4 +1,5 @@
 # Principal Component Analysis (PCA) — From Theory to Practice
+
 ## Breast Cancer Diagnostics Case Study
 
 A comprehensive implementation of **PCA from scratch**, validated against scikit-learn, applied to the Wisconsin Breast Cancer dataset for multicollinearity diagnosis and dimensionality reduction.
@@ -8,12 +9,14 @@ A comprehensive implementation of **PCA from scratch**, validated against scikit
 ## 📋 Project Overview
 
 **Objective:**
+
 - Diagnose severe multicollinearity in 30 clinical features
 - Implement PCA from first principles (SVD & Eigenvalue decomposition)
 - Validate custom implementation against sklearn
 - Quantify the accuracy-vs-efficiency trade-off in classification pipelines
 
 **Dataset:** Wisconsin Breast Cancer Dataset
+
 - **Size:** 569 samples × 30 features
 - **Target:** Binary classification (Benign / Malignant)
 - **Class Balance:** 63% Benign, 37% Malignant
@@ -34,6 +37,7 @@ Raw Data → EDA (Skewness/Outliers) → Correlation Clustering
 ## 📊 Key Sections
 
 ### 1. **Data Loading & Preprocessing**
+
 - Minimal cleaning: removes ID column and artifact column (`Unnamed: 32`)
 - Binary label encoding: M=1 (Malignant), B=0 (Benign)
 - **Skewness Analysis:** 22/30 features have |skew| > 1
@@ -42,12 +46,14 @@ Raw Data → EDA (Skewness/Outliers) → Correlation Clustering
   - Improves recall for malignant class from 0.8810 → 0.9524
 
 ### 2. **Exploratory Data Analysis (EDA)**
+
 - Distribution analysis (histograms with seaborn)
 - Skewness and kurtosis metrics
 - Outlier detection using z-scores
 - Class balance assessment
 
 ### 3. **Multicollinearity Diagnosis**
+
 - **Pearson Correlation Matrix:** Identifies highly correlated feature pairs
 - **Hierarchical Clustering:** Groups correlated features using dendrogram
 - **Variance Inflation Factor (VIF):** Quantifies multicollinearity severity
@@ -57,20 +63,24 @@ Raw Data → EDA (Skewness/Outliers) → Correlation Clustering
 ### 4. **Principal Component Analysis Implementation**
 
 #### From Scratch (Two Methods):
+
 1. **SVD-Based PCA:** Direct singular value decomposition
 2. **Eigenvalue-Based PCA:** Covariance matrix eigendecomposition
 
 #### Key Outputs:
+
 - Principal components (loadings/weights)
 - Explained variance ratio per component
 - Cumulative explained variance
 - Transformed data in reduced space
 
 #### Validation:
+
 - Custom implementation validated against `sklearn.decomposition.PCA`
 - Numerical equivalence verified for transformed data and explained variance
 
 ### 5. **Explained Variance Analysis**
+
 - Scree plot: cumulative explained variance vs. number of components
 - **Optimal component selection:** 3 components retain 75% of total variance
 - Trade-off analysis: Just 3 components reduce dimensions by 90% while retaining most information
@@ -78,10 +88,12 @@ Raw Data → EDA (Skewness/Outliers) → Correlation Clustering
 ### 6. **Classification Pipeline**
 
 #### Models Evaluated:
+
 - Logistic Regression with 3 PCA components versus 30 original features
 - Pipeline: `StandardScaler → PowerTransformer → PCA → LogisticRegression`
 
 #### Metrics Computed:
+
 - Accuracy, Precision, Recall, F1-Score
 - ROC-AUC Score
 - Confusion Matrix
@@ -111,43 +123,26 @@ pca/
 
 ---
 
-## 🚀 Usage
-
-### Run the Full Analysis:
-```bash
-jupyter notebook PCA.ipynb
-```
-
-### Execute Specific Sections:
-1. Load data and run EDA
-2. Compute correlation matrix and VIF
-3. Apply PowerTransformer
-4. Run custom PCA implementations
-5. Validate against sklearn
-6. Train classification models
-
----
-
 ## 📈 Results Summary
 
 ### Classification Performance (Logistic Regression with PowerTransformer)
 
-| Metric | Without PCA (30 features) | With PCA (3 components) | Difference |
-|--------|---------------------------|------------------------|-----------|
-| Accuracy | 0.9825 (98.25%) | 0.9737 (97.37%) | −0.88% |
-| Precision (Malignant) | 0.9722 | 0.9608 | −1.14% |
-| Recall (Malignant) | **0.9524** | **0.9524** | ✅ Tied |
-| F1-Score (Malignant) | 0.9621 | 0.9565 | −0.56% |
-| ROC-AUC | 0.9983 | 0.9974 | −0.09% |
+| Metric                | Without PCA (30 features) | With PCA (3 components) | Difference |
+| --------------------- | ------------------------- | ----------------------- | ---------- |
+| Accuracy              | 0.9825 (98.25%)           | 0.9737 (97.37%)         | −0.88%    |
+| Precision (Malignant) | 0.9722                    | 0.9608                  | −1.14%    |
+| Recall (Malignant)    | **0.9524**          | **0.9524**        | ✅ Tied    |
+| F1-Score (Malignant)  | 0.9621                    | 0.9565                  | −0.56%    |
+| ROC-AUC               | 0.9983                    | 0.9974                  | −0.09%    |
 
 ### Efficiency Gains (PCA with 3 components)
 
-| Metric | Without PCA | With PCA (3) | Improvement |
-|--------|------------|-------------|------------|
-| Features Retained | 30 | 3 | **90% reduction** |
-| Variance Captured | 100% | 75.01% | — |
-| Memory Usage | 106.6 KB | 10.7 KB | **10× reduction** |
-| Training Time | baseline | ~3× faster | **~3× speedup** |
+| Metric            | Without PCA | With PCA (3) | Improvement              |
+| ----------------- | ----------- | ------------ | ------------------------ |
+| Features Retained | 30          | 3            | **90% reduction**  |
+| Variance Captured | 100%        | 75.01%       | —                       |
+| Memory Usage      | 106.6 KB    | 10.7 KB      | **10× reduction** |
+| Training Time     | baseline    | ~3× faster  | **~3× speedup**   |
 
 **Key Finding:** After PowerTransformer (Yeo-Johnson) correction, PCA achieves **10× compression with <1% accuracy cost and tied recall** for malignant classification.
 
@@ -156,6 +151,7 @@ jupyter notebook PCA.ipynb
 ## 🎯 Learning Objectives
 
 By working through this notebook, you will learn:
+
 1. ✅ Why multicollinearity is problematic (VIF analysis)
 2. ✅ How PCA works mathematically (SVD vs. Eigenvalue methods)
 3. ✅ How to implement PCA from scratch
@@ -179,9 +175,3 @@ By working through this notebook, you will learn:
 - [PCA Theory: Pattern Recognition and Machine Learning](https://www.springer.com/gp/book/9780387310732)
 - [Scikit-learn PCA Documentation](https://scikit-learn.org/stable/modules/decomposition.html#pca)
 - [UCI Wisconsin Breast Cancer Dataset](https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+(Diagnostic))
-
----
-
-**Author:** AI from Scratch  
-**Last Updated:** March 2026  
-**License:** Open Source

@@ -1,4 +1,57 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyTorch / Model checkpoints
+*.pth
+*.pt
+*.bin
+*.safetensors
+*.ckpt
+
+# Jupyter Notebook checkpoints & cache
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.env
+.venv
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary scratch scripts & logs
+scratch/
 extract_code.py
 extracted_code.py
-plan.md
-speech_ai_milestones.md
+*.log
