@@ -596,7 +596,7 @@ class HuBERTMasking(nn.Module):
                 starts = torch.randperm(max(1, T - self.mask_length))[:num_spans]
                 for s in starts:
                     mask[b, s : s + self.mask_length] = True
-              
+            
         x_masked = x.clone()
         x_masked[mask] = self.mask_embedding
         return x_masked, mask
@@ -675,7 +675,7 @@ class HuBERTPretrainingModel(nn.Module):
             masked_logits = logits[mask_indices]             # (N_masked, num_classes)
             masked_targets = target_cluster_ids[mask_indices]# (N_masked)
             loss = F.cross_entropy(masked_logits, masked_targets)
-      
+    
         return {
             "loss": loss,
             "logits": logits,
@@ -715,7 +715,7 @@ class HuBERTForCTC(nn.Module):
         # Freeze CNN encoder
         for param in self.hubert.feature_extractor.parameters():
             param.requires_grad = False
-      
+    
         self.dropout = nn.Dropout(0.1)
         self.lm_head = nn.Linear(self.hubert.transformer.layers[0].linear1.in_features, vocab_size)
 
@@ -735,7 +735,7 @@ class HuBERTForCTC(nn.Module):
                 log_probs, labels, input_lengths, target_lengths,
                 blank=28, zero_infinity=True
             )
-      
+    
         return {"loss": loss, "logits": logits}
 ```
 
@@ -845,7 +845,7 @@ Combining multiple cluster targets acts as multi-task regularization:
 
 ### Q1: Does "16 kHz" mean 16,000 training examples per second?
 
-**Answer:****No.** In audio signal processing and machine learning, **16 kHz (16,000 Hz)** is the **Audio Sampling Rate (Sampling Frequency)** of the raw acoustic pressure wave, not the dataset batch size or number of utterances.
+**Answer:** **No.** In audio signal processing and machine learning, **16 kHz (16,000 Hz)** is the **Audio Sampling Rate (Sampling Frequency)** of the raw acoustic pressure wave, not the dataset batch size or number of utterances.
 
 - **Microphone Digitization:** An analog audio signal is measured (sampled) 16,000 times each second. Thus, **1.0 second of audio = a 1D continuous tensor of 16,000 floating-point numbers**.
 - **Downsampling to Feature Frames:** HuBERT's 7-layer CNN encoder compresses this raw signal by a total factor of $320\times$ ($5 \times 2^6$).
@@ -956,6 +956,7 @@ self.activation = nn.GELU()
 #### A. Why `nn.GroupNorm(num_groups=1)`?
 
 1. **Mathematical Equivalence to LayerNorm:** When `num_groups=1`, all $C$ channels are grouped into a single group. GroupNorm computes the mean and variance across the channel dimension for each frame of an utterance independently:
+
    $$
    \mu = \frac{1}{C} \sum_{c=1}^C x_c, \quad \sigma^2 = \frac{1}{C} \sum_{c=1}^C (x_c - \mu)^2
    $$
@@ -963,6 +964,7 @@ self.activation = nn.GELU()
    This is **identical to Layer Normalization**.
 2. **Native Execution on Conv1D Tensors:** PyTorch 1D convolutions output shape `(Batch, Channels, Time)`. Standard `nn.LayerNorm(C)` requires the normalized axis to be the last dimension `(B, T, C)`, requiring messy transpositions (`x.transpose(1, 2) -> LayerNorm -> x.transpose(1, 2)`). `nn.GroupNorm(1, C)` executes LayerNorm directly without tensor permutations.
 3. **Why not `nn.BatchNorm1d`?**
+
    - **Variable Audio Lengths:** Speech clips have highly varying durations ($1\text{s} \to 15\text{s}$), creating padding artifacts in BatchNorm.
    - **Small Per-GPU Batch Sizes:** Large speech models (Large 317M, X-Large 1B) only fit 1–2 long utterances per GPU. BatchNorm fails with small batch sizes due to erratic batch statistics.
    - **No Train/Inference Discrepancies:** GroupNorm uses only individual sample statistics, behaving identically in training and testing.

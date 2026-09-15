@@ -14,12 +14,18 @@ Stage 3 represents the modern State-of-the-Art paradigm shift in audio AI: bypas
 03-foundation-ssl-transformers/
 ├── README.md                                                  # This documentation
 ├── 04_ssl_speech_transformers.ipynb                          # Benchmark: Wav2Vec 2.0, HuBERT, WavLM, Whisper
-└── wav2vec2-deep-dive/                                        # Complete from-scratch implementation & study
-    ├── README.md                                              # Deep dive guide & architecture dataflow
-    ├── wav2vec2_implementation.ipynb                          # Pure PyTorch wav2vec 2.0 implementation
-    ├── wav2vec2_master_guide.md                               # 375-line master reference & tensor dimensions
-    ├── wav2vec2_summary.md                                    # Executive cheat sheet
-    └── wav2vec 2.0.pdf                                        # Original NeurIPS 2020 paper
+├── wav2vec2-deep-dive/                                        # wav2vec 2.0 deep dive
+│   ├── README.md
+│   ├── wav2vec2_implementation.ipynb
+│   ├── wav2vec2_master_guide.md
+│   └── wav2vec2_summary.md
+├── HuBERT-deep-dive/                                          # HuBERT deep dive
+│   ├── HuBERT_implementation.ipynb
+│   ├── HuBERT_master_guide.md
+│   └── HuBERT_summary.md
+└── wavlm-deep-dive/                                           # WavLM deep dive
+    ├── wavlm_master_guide.md
+    └── wavlm_summary.md
 ```
 
 ---
