@@ -55,3 +55,4 @@ scratch/
 extract_code.py
 extracted_code.py
 *.log
+data/
