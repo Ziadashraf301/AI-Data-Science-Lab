@@ -59,6 +59,7 @@ trees/
 │   ├── 02_classical_boosting_and_histograms.ipynb                  # AdaBoost, Friedman GBM & HistGradientBoosting
 │   ├── 03_production_big_three_deep_dive.ipynb                     # XGBoost 2.x, LightGBM, CatBoost & DART on GPU
 │   ├── 04_interpretable_glassbox_trees.ipynb                       # EBM (Microsoft InterpretML), RuleFit & FIGS
+│   ├── GLASS_BOX_MODELS_EXPLAINED.md                               # Deep Guide: Why Glass-Box Models Exist & Tradeoffs
 │   ├── 05_specialized_production_and_streaming_trees.ipynb         # Google YDF, NGBoost, River Hoeffding Trees, Isolation Forest
 │   ├── 06_neural_tree_hybrids_and_differentiable_trees.ipynb       # TabNet, NODE, NCART & Differentiable Trees
 │   └── 07_tabular_foundation_models_and_production_stacking.ipynb  # TabPFN v2/v3, In-Context Learning, Stacking & Treelite
