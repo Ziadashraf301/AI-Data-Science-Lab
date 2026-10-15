@@ -44,8 +44,8 @@ audio-processing/
 │       ├── whisper_implementation.ipynb
 │       ├── whisper_master_guide.md
 │       ├── whisper_cheatsheet.html / .png
-│       ├── audio.wav                       # Egyptian Arabic test clip (69.5 s)
-│       └── ground_truth.txt
+│       ├── audio.wav                                  # Egyptian Arabic test clip (69.5 s)
+│       └── ground_truth.txt                           # Reference transcript for WER / CER
 │
 └── docs/                                              # Research Roadmaps & Strategy
     ├── speech_ai_milestones.md                        # Speech AI Roadmap (2015–2026)
@@ -88,5 +88,6 @@ audio-processing/
 - [**Stage 2: Deep Learning — Spectrogram CNNs & Attention**](02-deep-learning-cnn-attention/README.md)
 - [**Stage 3: Foundation SSL Speech Transformers**](03-foundation-ssl-transformers/README.md)
 - [**wav2vec 2.0 Deep Dive Reference**](03-foundation-ssl-transformers/wav2vec2-deep-dive/README.md)
+- [**Whisper Deep Dive (Arabic & English)**](03-foundation-ssl-transformers/whisper-deep-dive/whisper_master_guide.md)
 - [**Speech AI Milestones Roadmap (2015–2026)**](docs/speech_ai_milestones.md)
 - [**SER Notebook Evolution Plan**](docs/speech_emotion_recognition_plan.md)

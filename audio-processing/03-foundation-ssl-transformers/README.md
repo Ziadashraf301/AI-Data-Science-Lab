@@ -31,8 +31,8 @@ Stage 3 represents the modern State-of-the-Art paradigm shift in audio AI: bypas
     ├── whisper_implementation.ipynb
     ├── whisper_master_guide.md
     ├── whisper_cheatsheet.html / .png
-    ├── audio.wav                       # Egyptian Arabic test clip (69.5 s)
-    └── ground_truth.txt
+    ├── audio.wav                                              # Egyptian Arabic test clip (69.5 s)
+    └── ground_truth.txt                                       # Reference transcript for WER / CER
 ```
 
 ---
@@ -44,7 +44,7 @@ Stage 3 represents the modern State-of-the-Art paradigm shift in audio AI: bypas
 | **Wav2Vec 2.0** | 1D Temporal CNN + Transformer      | Masked Contrastive Coding over Codebook Quantization | Raw waveform representation pioneer |
 | **HuBERT**      | 1D Temporal CNN + BERT Transformer | Masked Prediction of Offline K-Means Pseudo-Units    | Clean phonetic acoustic codebooks   |
 | **WavLM**       | 1D CNN + Conformer/Transformer     | Masked MLM + Gated Relative Bias + Speech Denoising  | SOTA for prosody & speaker traits   |
-| **Whisper**     | Encoder-Decoder Transformer        | Supervised Multitasking on 680k hours                | Robust multilingual ASR embeddings  |
+| **Whisper**     | Encoder-Decoder Transformer        | Weakly-Supervised Multitask (680k h)                | Robust multilingual ASR embeddings  |
 
 ---
 
