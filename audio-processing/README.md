@@ -26,12 +26,26 @@ audio-processing/
 ├── 03-foundation-ssl-transformers/                    # Stage 3: Modern SSL Speech Transformers & Foundation Models
 │   ├── README.md                                      # Guide on SSL models (Wav2Vec2, HuBERT, WavLM, Whisper)
 │   ├── 04_ssl_speech_transformers.ipynb               # Probing & Fine-tuning Wav2Vec2, HuBERT, WavLM, Whisper (88.89%)
-│   └── wav2vec2-deep-dive/                            # Complete PyTorch wav2vec 2.0 implementation & master guides
-│       ├── README.md
-│       ├── wav2vec2_implementation.ipynb
-│       ├── wav2vec2_master_guide.md
-│       ├── wav2vec2_summary.md
-│       └── wav2vec 2.0.pdf
+│   ├── wav2vec2-deep-dive/                            # Complete PyTorch wav2vec 2.0 implementation & master guides
+│   │   ├── README.md
+│   │   ├── wav2vec2_implementation.ipynb
+│   │   ├── wav2vec2_master_guide.md
+│   │   ├── wav2vec2_summary.md
+│   │   └── wav2vec 2.0.pdf
+│   ├── HuBERT-deep-dive/                              # HuBERT deep dive
+│   │   ├── HuBERT_implementation.ipynb
+│   │   ├── HuBERT_master_guide.md
+│   │   └── HuBERT_summary.md
+│   ├── wavlm-deep-dive/                               # WavLM deep dive
+│   │   ├── WavLM_implementation.ipynb
+│   │   ├── wavlm_master_guide.md
+│   │   └── wavlm_summary.md
+│   └── whisper-deep-dive/                             # Whisper: Arabic & English, model sizes, CPU vs GPU, offline vs online
+│       ├── whisper_implementation.ipynb
+│       ├── whisper_master_guide.md
+│       ├── whisper_cheatsheet.html / .png
+│       ├── audio.wav                       # Egyptian Arabic test clip (69.5 s)
+│       └── ground_truth.txt
 │
 └── docs/                                              # Research Roadmaps & Strategy
     ├── speech_ai_milestones.md                        # Speech AI Roadmap (2015–2026)

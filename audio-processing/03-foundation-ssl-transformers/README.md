@@ -23,9 +23,16 @@ Stage 3 represents the modern State-of-the-Art paradigm shift in audio AI: bypas
 │   ├── HuBERT_implementation.ipynb
 │   ├── HuBERT_master_guide.md
 │   └── HuBERT_summary.md
-└── wavlm-deep-dive/                                           # WavLM deep dive
-    ├── wavlm_master_guide.md
-    └── wavlm_summary.md
+├── wavlm-deep-dive/                                           # WavLM deep dive
+│   ├── WavLM_implementation.ipynb
+│   ├── wavlm_master_guide.md
+│   └── wavlm_summary.md
+└── whisper-deep-dive/                                         # Whisper: Arabic & English, model sizes, CPU vs GPU, offline vs online
+    ├── whisper_implementation.ipynb
+    ├── whisper_master_guide.md
+    ├── whisper_cheatsheet.html / .png
+    ├── audio.wav                       # Egyptian Arabic test clip (69.5 s)
+    └── ground_truth.txt
 ```
 
 ---

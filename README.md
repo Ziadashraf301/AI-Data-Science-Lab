@@ -30,6 +30,10 @@ AI-Data-Science-Lab/
 │   ├── README.md                               # Derivations, decision boundaries & small-sample analysis
 │   └── probabilistic_classifiers.ipynb         # LDA, QDA, Naive Bayes & Logistic Reg from scratch
 │
+├── trees/                                      # Tree-based models for tabular ML
+│   ├── README.MD                               # Module overview
+│   └── notebooks/                              # Trees & bagging, boosting, XGBoost/LightGBM/CatBoost, glass-box models
+│
 └── audio-processing/                           # Speech AI & Speech Emotion Recognition (SER) Track
     ├── README.md                               # Master track overview & unified leaderboard
     ├── 01-classical-audio-ml/                  # Stage 1: Classical ML & Handcrafted DSP Features
@@ -42,12 +46,26 @@ AI-Data-Science-Lab/
     ├── 03-foundation-ssl-transformers/         # Stage 3: Modern SSL Speech Transformers & Foundation Models
     │   ├── README.md                           # Guide on SSL models (Wav2Vec2, HuBERT, WavLM, Whisper)
     │   ├── 04_ssl_speech_transformers.ipynb    # Probing & Fine-tuning Wav2Vec2, HuBERT, WavLM, Whisper
-    │   └── wav2vec2-deep-dive/                 # Complete PyTorch wav2vec 2.0 implementation & master guides
-    │       ├── README.md
-    │       ├── wav2vec2_implementation.ipynb
-    │       ├── wav2vec2_master_guide.md
-    │       ├── wav2vec2_summary.md
-    │       └── wav2vec 2.0.pdf
+    │   ├── wav2vec2-deep-dive/                 # Complete PyTorch wav2vec 2.0 implementation & master guides
+    │   │   ├── README.md
+    │   │   ├── wav2vec2_implementation.ipynb
+    │   │   ├── wav2vec2_master_guide.md
+    │   │   ├── wav2vec2_summary.md
+    │   │   └── wav2vec 2.0.pdf
+    │   ├── HuBERT-deep-dive/                     # HuBERT deep dive
+    │   │   ├── HuBERT_implementation.ipynb
+    │   │   ├── HuBERT_master_guide.md
+    │   │   └── HuBERT_summary.md
+    │   ├── wavlm-deep-dive/                      # WavLM deep dive
+    │   │   ├── WavLM_implementation.ipynb
+    │   │   ├── wavlm_master_guide.md
+    │   │   └── wavlm_summary.md
+    │   └── whisper-deep-dive/                    # Whisper: Arabic & English, model sizes, CPU vs GPU, offline vs online
+    │       ├── whisper_implementation.ipynb
+    │       ├── whisper_master_guide.md
+    │       ├── whisper_cheatsheet.html / .png
+    │       ├── audio.wav                       # Egyptian Arabic test clip (69.5 s)
+    │       └── ground_truth.txt
     └── docs/                                   # Research Roadmaps & Strategy
         ├── speech_ai_milestones.md             # Speech AI Roadmap (2015–2026)
         └── speech_emotion_recognition_plan.md  # SER Evolution & Architecture Design Plan
@@ -61,8 +79,8 @@ AI-Data-Science-Lab/
 
 | Module                                                                                              | Core Algorithm                         | Mathematical Foundation                                                                                                                     | Key Result / Dataset                                                                                                       |
 | --------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| [**`pca/`**](file:///c:/Users/MSI/OneDrive/Desktop/work/AI-Data-Science-Lab/pca/README.md)   | **Principal Component Analysis** | SVD ($\mathbf{X} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^T$) & Eigendecomposition ($\mathbf{\Sigma}_{cov}\mathbf{v} = \lambda\mathbf{v}$) | **90% feature reduction** (30 $\to$ 3) with $<1\%$ accuracy loss and identical recall on malignant breast cancer |
-| [**`tsne/`**](file:///c:/Users/MSI/OneDrive/Desktop/work/AI-Data-Science-Lab/tsne/README.md) | **t-Distributed SNE**            | High-D Gaussian perplexity binary search, Student-t kernel, KL divergence gradient descent                                                  | Custom NumPy implementation achieves identical 2D cluster separation to`sklearn.manifold.TSNE`                           |
+| [**`pca/`**](pca/README.md)   | **Principal Component Analysis** | SVD ($\mathbf{X} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^T$) & Eigendecomposition ($\mathbf{\Sigma}_{cov}\mathbf{v} = \lambda\mathbf{v}$) | **90% feature reduction** (30 $\to$ 3) with $<1\%$ accuracy loss and identical recall on malignant breast cancer |
+| [**`tsne/`**](tsne/README.md) | **t-Distributed SNE**            | High-D Gaussian perplexity binary search, Student-t kernel, KL divergence gradient descent                                                  | Custom NumPy implementation achieves identical 2D cluster separation to`sklearn.manifold.TSNE`                           |
 
 ---
 
@@ -70,7 +88,7 @@ AI-Data-Science-Lab/
 
 | Module                                                                                                                                        | Models Implemented                                            | Mathematical Focus                                                                                         | Evaluation Regimes                                                                                       |
 | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| [**`probabilistic_classifiers/`**](file:///c:/Users/MSI/OneDrive/Desktop/work/AI-Data-Science-Lab/probabilistic_classifiers/README.md) | **LDA, QDA, Gaussian Naive Bayes, Logistic Regression** | Shared vs. class-specific covariance matrices, conditional independence assumptions, log-odds optimization | $p=1$ boundary visualization, $p>1$ high-D cross validation, and small-sample breakdown ($n < 30$) |
+| [**`probabilistic_classifiers/`**](probabilistic_classifiers/README.md) | **LDA, QDA, Gaussian Naive Bayes, Logistic Regression** | Shared vs. class-specific covariance matrices, conditional independence assumptions, log-odds optimization | $p=1$ boundary visualization, $p>1$ high-D cross validation, and small-sample breakdown ($n < 30$) |
 
 ---
 
@@ -78,10 +96,11 @@ AI-Data-Science-Lab/
 
 | Stage & Submodule                                                                                                                                                             | Paradigm                               | Key Architectures & Techniques                                                                      | Performance (RAVDESS)                             |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| [**Stage 1: Classical Audio ML**](file:///c:/Users/MSI/OneDrive/Desktop/work/AI-Data-Science-Lab/audio-processing/01-classical-audio-ml/README.md)                       | Handcrafted Spectral Descriptors       | MFCCs, Chroma, Tonnetz, Spectral Contrast, Tree Ensembles, MLP                                      | 73.96% Test Acc                                   |
-| [**Stage 2: Spectrogram CNNs & Attention**](file:///c:/Users/MSI/OneDrive/Desktop/work/AI-Data-Science-Lab/audio-processing/02-deep-learning-cnn-attention/README.md)    | Spectrogram Vision & Sequence Modeling | Log-Mel Spectrograms, SpecAugment, Mixup, ResNet18, BiLSTM, Attention Pooling, Multi-Head Attention | 87.04% Test Acc (ResNet18) / 77.31% (BiLSTM+MHSA) |
-| [**Stage 3: Foundation SSL Transformers**](file:///c:/Users/MSI/OneDrive/Desktop/work/AI-Data-Science-Lab/audio-processing/03-foundation-ssl-transformers/README.md)     | Self-Supervised Raw Waveform Models    | Pre-trained Wav2Vec 2.0, HuBERT, WavLM, Whisper (Probing & End-to-End Fine-Tuning)                  | **88.89%+ Test Acc** ⭐                     |
-| [**wav2vec 2.0 Deep Dive**](file:///c:/Users/MSI/OneDrive/Desktop/work/AI-Data-Science-Lab/audio-processing/03-foundation-ssl-transformers/wav2vec2-deep-dive/README.md) | Foundation Speech Architecture         | 7-layer 1D Temporal CNN, Product Quantization (Gumbel-Softmax), Masked Span Transformer             | Complete PyTorch implementation from scratch      |
+| [**Stage 1: Classical Audio ML**](audio-processing/01-classical-audio-ml/README.md)                       | Handcrafted Spectral Descriptors       | MFCCs, Chroma, Tonnetz, Spectral Contrast, Tree Ensembles, MLP                                      | 73.96% Test Acc                                   |
+| [**Stage 2: Spectrogram CNNs & Attention**](audio-processing/02-deep-learning-cnn-attention/README.md)    | Spectrogram Vision & Sequence Modeling | Log-Mel Spectrograms, SpecAugment, Mixup, ResNet18, BiLSTM, Attention Pooling, Multi-Head Attention | 87.04% Test Acc (ResNet18) / 77.31% (BiLSTM+MHSA) |
+| [**Stage 3: Foundation SSL Transformers**](audio-processing/03-foundation-ssl-transformers/README.md)     | Self-Supervised Raw Waveform Models    | Pre-trained Wav2Vec 2.0, HuBERT, WavLM, Whisper (Probing & End-to-End Fine-Tuning)                  | **88.89%+ Test Acc** ⭐                     |
+| [**wav2vec 2.0 Deep Dive**](audio-processing/03-foundation-ssl-transformers/wav2vec2-deep-dive/README.md) | Foundation Speech Architecture         | 7-layer 1D Temporal CNN, Product Quantization (Gumbel-Softmax), Masked Span Transformer             | Complete PyTorch implementation from scratch      |
+| [**Whisper Deep Dive**](audio-processing/03-foundation-ssl-transformers/whisper-deep-dive/whisper_implementation.ipynb) | Supervised Multilingual ASR | Log-Mel encoder-decoder, special tokens, Egyptian Arabic WER/CER, tiny to turbo, faster-whisper CPU vs GPU, offline vs online APIs | Arabic WER 0.88 (tiny) to 0.21 (turbo) |
 
 ---
 
