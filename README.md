@@ -34,6 +34,10 @@ AI-Data-Science-Lab/
 │   ├── README.MD                               # Module overview
 │   └── notebooks/                              # Trees & bagging, boosting, XGBoost/LightGBM/CatBoost, glass-box models
 │
+├── nlp/                                        # NLP / NLU experiments
+│   ├── README.md
+│   └── safety-classifiers-benchmark/           # Spam & jailbreak detection: Jev vs DeBERTa vs Gemini Flash-Lite
+│
 └── audio-processing/                           # Speech AI & Speech Emotion Recognition (SER) Track
     ├── README.md                               # Master track overview & unified leaderboard
     ├── 01-classical-audio-ml/                  # Stage 1: Classical ML & Handcrafted DSP Features
