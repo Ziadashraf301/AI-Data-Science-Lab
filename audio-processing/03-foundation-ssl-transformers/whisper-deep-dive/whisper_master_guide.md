@@ -1,216 +1,240 @@
-# 📖 Whisper: The Minute Master Guide
+# Whisper: Technical Guide
 
-> **Paper:** *Robust Speech Recognition via Large-Scale Weak Supervision*
-> **Authors:** Alec Radford, Jong Wook Kim, Tao Xu, Greg Brockman, Christine McLeavey, Ilya Sutskever (OpenAI, 2022)
-> **arXiv:** [2212.04356](https://arxiv.org/abs/2212.04356) | **Code:** [github.com/openai/whisper](https://github.com/openai/whisper)
-> **Companion notebook:** [whisper_implementation.ipynb](whisper_implementation.ipynb)
+- **Paper:** *Robust Speech Recognition via Large-Scale Weak Supervision*, Radford, Kim, Xu, Brockman, McLeavey, Sutskever (OpenAI, 2022)
+- **arXiv:** [2212.04356](https://arxiv.org/abs/2212.04356)
+- **Code:** [github.com/openai/whisper](https://github.com/openai/whisper)
+- **Notebook:** [whisper_implementation.ipynb](whisper_implementation.ipynb) (all numbers in section 9 come from it)
 
-## ⏱️ 30-Minute Reading Plan
-
-| Minutes | Section                                   | You will be able to...               |
-| ------- | ----------------------------------------- | ------------------------------------ |
-| 0–4    | 1. Big idea                               | explain Whisper in one sentence      |
-| 4–12   | 2–4. Input → Encoder → Decoder         | trace shapes from raw audio to text  |
-| 12–16  | 5. Multitask tokens                       | read and write Whisper's task prompt |
-| 16–20  | 6. Long-form decoding                     | explain hallucination guards         |
-| 20–26  | 7–8. Arabic & English, offline vs online | choose a deployment                  |
-| 26–30  | 9–10. Comparison, recap & Arabic post    | write the LinkedIn post              |
-
----
-
-## 1. The Big Idea (in one sentence)
-
-> **Whisper doesn't use a new architecture. It uses a *standard* Transformer encoder–decoder trained on a *huge, noisy, multilingual* dataset (680,000 hours scraped from the web), so it works zero-shot on audio it has never seen.**
-
-How it differs from the models in this folder:
-
-|              | wav2vec 2.0 / HuBERT / WavLM                    | Whisper                                                     |
-| ------------ | ----------------------------------------------- | ----------------------------------------------------------- |
-| Learning     | **Self-supervised** (audio only, no text) | **Weakly supervised** (audio + noisy web transcripts) |
-| Architecture | Encoder only + CTC head                         | **Encoder + Decoder** (seq2seq)                       |
-| Input        | Raw waveform (CNN feature encoder)              | **Log-Mel spectrogram**                               |
-| Use as ASR   | Needs fine-tuning on labelled data              | **Works out of the box**                              |
-| Output       | Characters (CTC)                                | BPE text tokens, with punctuation and casing                |
-
-**Analogy:** wav2vec2/HuBERT learn to *hear* (good acoustic features). Whisper learns to *listen and write*, like a stenographer who has transcribed 77 years of audio.
+## Contents
+1. [Overview](#1-overview)
+2. [Input: log-Mel spectrogram](#2-input-log-mel-spectrogram)
+3. [Audio encoder](#3-audio-encoder)
+4. [Text decoder](#4-text-decoder)
+5. [Multitask token format](#5-multitask-token-format)
+6. [Long-form decoding](#6-long-form-decoding)
+7. [Arabic and English](#7-arabic-and-english)
+8. [Deployment: offline vs online](#8-deployment-offline-vs-online)
+9. [Results on my data](#9-results-on-my-data)
+10. [Summary](#10-summary)
 
 ---
 
-## 2. Step 1: Audio → Log-Mel Spectrogram
+## 1. Overview
 
-| Step            | Value                                                | Shape (30 s example)                     |
-| --------------- | ---------------------------------------------------- | ---------------------------------------- |
-| Resample        | 16,000 Hz mono                                       | 30 × 16,000 = **480,000 samples** |
-| Pad / trim      | Always exactly **30 s**                        | 480,000                                  |
-| STFT            | window 400 (25 ms), hop 160 (10 ms)                  | 480,000 / 160 = **3,000 frames**   |
-| Mel filterbank  | **80** bins (128 in large-v3)                  | **80 × 3,000**                    |
-| Log + normalise | `log10`, clamp to (max − 8), then `(x + 4) / 4` | values ≈ [-1, 1]                        |
+Whisper is a standard Transformer encoder-decoder. The architecture is not new; what's different is the training data: 680,000 hours of audio with transcripts scraped from the web. The labels are noisy, so the paper calls it weak supervision. Because the data is so large and varied, the model works zero-shot on new audio without fine-tuning.
 
-**Worked example:** a 7-second voice note becomes 112,000 samples, is padded with zeros up to 480,000, and becomes an 80 × 3,000 matrix. The last ~2,300 columns are just silence. Whisper *always* sees 30 s, which is why short clips can sometimes "hallucinate" text in the silent part.
+| | wav2vec 2.0 / HuBERT / WavLM | Whisper |
+|---|---|---|
+| Training | Self-supervised (audio only) | Weakly supervised (audio + web transcripts) |
+| Architecture | Encoder only + CTC head | Encoder + decoder (seq2seq) |
+| Input | Raw waveform (CNN feature encoder) | Log-Mel spectrogram |
+| ASR out of the box | No, needs fine-tuning on labelled data | Yes |
+| Output | Characters (CTC) | BPE tokens, with punctuation and casing |
+
+Training data split (from the paper): about 438k hours of English ASR, 117k hours of non-English ASR across 96 languages, and 125k hours of X to English translation.
 
 ---
 
-## 3. Step 2: The Audio Encoder
+## 2. Input: log-Mel spectrogram
+
+| Step | Value | Shape (30 s) |
+|---|---|---|
+| Resample | 16 kHz mono | 480,000 samples |
+| Pad / trim | always exactly 30 s | 480,000 |
+| STFT | window 400 (25 ms), hop 160 (10 ms) | 3,000 frames |
+| Mel filterbank | 80 bins (128 in large-v3) | 80 x 3,000 |
+| Log + normalise | `log10`, clamp to `max - 8`, then `(x + 4) / 4` | values around [-1, 1] |
+
+A 7 second clip is 112,000 samples, zero-padded to 480,000. So most of the 80 x 3,000 matrix is silence. This padding is one reason Whisper can hallucinate text on short clips.
+
+---
+
+## 3. Audio encoder
 
 ```text
-log-Mel (80 × 3000)
-  → Conv1D(80→d, k=3, pad=1) + GELU          → d × 3000
-  → Conv1D(d→d,  k=3, stride=2, pad=1) + GELU → d × 1500   ← halves time
-  → + sinusoidal positional encoding
-  → N × [LayerNorm → Self-Attention → LayerNorm → MLP] (pre-LN, residual)
-  → LayerNorm → H_audio ∈ ℝ^(1500 × d)
+log-Mel (80 x 3000)
+  -> Conv1D(80 -> d, k=3, pad=1) + GELU            d x 3000
+  -> Conv1D(d -> d, k=3, stride=2, pad=1) + GELU   d x 1500   (halves time)
+  -> + sinusoidal positional encoding
+  -> N x [LayerNorm -> Self-Attention -> LayerNorm -> MLP]   (pre-LN, residual)
+  -> LayerNorm -> H_audio (1500 x d)
 ```
 
-- Each of the 1,500 output vectors covers **20 ms** of audio.
-- Self-attention cost grows with 1500², so the conv stride matters.
+- Each of the 1,500 output vectors covers 20 ms of audio.
+- Self-attention is O(1500^2), so the stride-2 conv halves the attention cost.
 
-| Model          | Layers (enc = dec)       | d_model | Heads | Params | VRAM (fp16, approx.) | Relative speed |
-| -------------- | ------------------------ | ------- | ----- | ------ | -------------------- | -------------- |
-| tiny           | 4                        | 384     | 6     | 39 M   | ~1 GB                | ~10×          |
-| base           | 6                        | 512     | 8     | 74 M   | ~1 GB                | ~7×           |
-| small          | 12                       | 768     | 12    | 244 M  | ~2 GB                | ~4×           |
-| medium         | 24                       | 1024    | 16    | 769 M  | ~5 GB                | ~2×           |
-| large (v2/v3)  | 32                       | 1280    | 20    | 1.55 B | ~10 GB               | 1×            |
-| large-v3-turbo | 32 enc / **4 dec** | 1280    | 20    | 809 M  | ~6 GB                | ~8×           |
+| Model | Layers (enc / dec) | d_model | Heads | Params | VRAM fp16 (approx.) |
+|---|---|---|---|---|---|
+| tiny | 4 / 4 | 384 | 6 | 39 M | ~1 GB |
+| base | 6 / 6 | 512 | 8 | 74 M | ~1 GB |
+| small | 12 / 12 | 768 | 12 | 244 M | ~2 GB |
+| medium | 24 / 24 | 1024 | 16 | 769 M | ~5 GB |
+| large-v2 / v3 | 32 / 32 | 1280 | 20 | 1.55 B | ~10 GB |
+| large-v3-turbo | 32 / 4 | 1280 | 20 | 809 M | ~6 GB |
 
-`.en` versions (tiny.en … medium.en) are English-only and slightly better for English.
+`.en` variants (tiny.en to medium.en) are English-only and slightly better on English. Turbo keeps the full large-v3 encoder but cuts the decoder from 32 layers to 4, and decoding is where most of the time goes.
 
 ---
 
-## 4. Step 3: The Text Decoder
+## 4. Text decoder
 
 ```text
-tokens so far → token embedding + learned positions (max 448)
-  → N × [Masked Self-Attn → Cross-Attn(Q=text, K,V=H_audio) → MLP]
-  → LayerNorm → (tied) output embedding → softmax over ~51,865 tokens
+tokens -> token embedding + learned positions (max 448)
+  -> N x [Masked Self-Attn -> Cross-Attn(Q = text, K,V = H_audio) -> MLP]
+  -> LayerNorm -> tied output embedding -> softmax over 51,865 tokens
 ```
 
-- **Cross-attention** is the "listening" step. Each text position looks at the 1,500 audio frames and decides which ones to attend to.
-- Tokenizer: byte-level BPE (GPT-2 style; the multilingual version adds tokens for other scripts).
-  ⚠️ Arabic text needs **more tokens per word** than English, so Arabic decoding is slower and the 448-token limit fills faster.
-- Training loss: standard next-token cross-entropy, computed only on the text tokens (not on the prompt).
+- Cross-attention is how each text position looks at the 1,500 audio vectors.
+- Tokenizer: byte-level BPE (GPT-2 style, extended for other scripts). Arabic takes more tokens per word than English, so decoding is slower and the 448-token context fills faster.
+- Loss: next-token cross-entropy on the text tokens only, not on the prompt tokens.
+
+Shapes I traced with forward hooks on `base` (d = 512): conv1 `(1, 512, 3000)`, conv2 `(1, 512, 1500)`, encoder `(1, 1500, 512)`, logits `(1, 4, 51865)`.
 
 ---
 
-## 5. Multitask Format: One Model, Many Jobs
+## 5. Multitask token format
 
-The decoder is "told" what to do by a token prefix:
+The decoder is told what to do through a prefix of special tokens:
 
 ```text
-<|startoftranscript|> <|ar|> <|transcribe|> <|notimestamps|>  مرحبا بكم ...  <|endoftext|>
-        start           language     task         timestamp mode     text           stop
+<|startoftranscript|> <|ar|> <|transcribe|> <|notimestamps|> ...text... <|endoftext|>
+       start          language    task       timestamp mode              stop
 ```
 
-| Goal                                    | Prefix                     |
-| --------------------------------------- | -------------------------- |
-| Arabic speech → Arabic text            | `<                         |
-| Arabic speech → **English** text | `<                         |
-| Detect language                         | feed only `<               |
-| Detect silence                          | probability of `<          |
-| Timestamps                              | drop `<                    |
-| Context / spelling hints                | put previous text after `< |
+| Goal | Prefix |
+|---|---|
+| Arabic speech to Arabic text | `<\|startoftranscript\|><\|ar\|><\|transcribe\|>` |
+| Arabic speech to English text | `<\|startoftranscript\|><\|ar\|><\|translate\|>` |
+| Language detection | feed only `<\|startoftranscript\|>`, read the language-token probabilities |
+| Voice activity | probability of `<\|nospeech\|>` |
+| Timestamps | leave out `<\|notimestamps\|>`; the model emits time tokens every 20 ms |
+| Prompting (names, spelling) | previous text after `<\|startofprev\|>` |
 
-> Whisper only translates **into English**. For English → Arabic you need a separate MT model or an LLM.
-
----
-
-## 6. Long-form Decoding (audio longer than 30 s)
-
-The model only sees 30 s at a time, so `transcribe()` uses a sliding window:
-
-1. Decode a window. Use the **last predicted timestamp** to decide where the next window starts.
-2. **Condition** on the previous window's text, for consistency of names and spelling.
-3. **Temperature fallback:** start greedy/beam (T=0, beam 5). If the output looks broken, retry with T = 0.2, 0.4 … 1.0. "Broken" means either:
-   - gzip **compression ratio > 2.4** (repetitive loops like "شكرا شكرا شكرا..."), or
-   - **average log-prob < −1** (low confidence).
-4. **No-speech:** if P(`<|nospeech|>`) > 0.6 *and* confidence is low, skip the window.
-
-These heuristics are the main defence against **hallucination**, Whisper's best-known weakness: it can invent fluent text during silence or music. Practical fixes: use VAD (voice activity detection) before transcribing, set `condition_on_previous_text=False` if loops appear, and avoid long silences.
+Whisper only translates into English. English to Arabic needs a separate MT model or an LLM.
 
 ---
 
-## 7. Whisper for Arabic 🇪🇬 and English 🇬🇧
+## 6. Long-form decoding
 
-### Why Whisper is a strong choice
+The model sees 30 s at a time, so `transcribe()` runs a sliding window:
 
-- **One model handles both** languages and **code-switching** (Egyptian speakers mixing English tech words into Arabic sentences).
-- Outputs **punctuation and readable text** directly, with no separate punctuation model.
-- **Zero-shot:** no Arabic labelled data needed to get started.
-- **Translation to English** for free (`task="translate"`).
+1. Decode a window. The last predicted timestamp sets where the next window starts.
+2. Condition on the previous window's text to keep names and spelling consistent.
+3. Temperature fallback: start at T = 0 (greedy or beam 5). If the output is bad, retry at T = 0.2, 0.4, ..., 1.0. Bad means:
+   - gzip compression ratio > 2.4 (repetition loops), or
+   - average log-prob < -1.
+4. No-speech: if P(`<|nospeech|>`) > 0.6 and the log-prob is low, skip the window.
 
-### The honest limitations for Arabic
+These checks are the main protection against hallucination (fluent made-up text during silence or music). In practice: run VAD before decoding, set `condition_on_previous_text=False` if loops show up, and avoid long silences.
 
-| Issue                                       | Why                                                                             | Fix                                                                          |
-| ------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Much lower accuracy than English            | Arabic had only a small share of the 680k hours (English ASR alone was ~438k h) | Use `large-v3` / `turbo`, or fine-tune                                   |
-| Dialects (Egyptian, Gulf, Levantine)        | Training data skews to MSA (Modern Standard Arabic) and news-style speech       | Fine-tune on dialect data (e.g. Common Voice, MGB-3 Egyptian, your own data) |
-| No diacritics (تشكيل)                  | Web transcripts rarely have them                                                | A post-processing diacritization model                                       |
-| Inconsistent spelling (ة/ه, أ/ا, ى/ي) | Noisy web labels                                                                | Normalize before computing WER                                               |
-| Language mis-detection on short clips       | Very little audio to decide from                                                | Always pass `language="ar"`                                                |
-
-**English** works well out of the box. For English-only, `distil-whisper` and `.en` models are faster.
-
-> 📏 **Measure, don't guess:** compute **WER** (word error rate) and, for Arabic, **CER** (character error rate) on 50–100 of *your own* clips. The notebook shows how.
+Two things to know:
+- Language detection runs once, on the first 30 s, and is then fixed for the whole file. Code-switched audio needs to be split, or the language set per chunk.
+- `avg_logprob`, `compression_ratio` and `no_speech_prob` are computed per 30 s window, not per segment. Every segment in a window gets the same values.
 
 ---
 
-## 8. Offline vs Online: How to Deploy
+## 7. Arabic and English
 
-|          | **Offline (on your machine)**                                                                                                         | **Online (cloud API)**                                                           |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Tools    | `openai-whisper`, **faster-whisper** (CTranslate2, int8), **whisper.cpp** (CPU / Apple Silicon / mobile), HF `transformers` | OpenAI API (`whisper-1`, `gpt-4o-transcribe`), Groq, Hugging Face Inference, Azure |
-| Privacy  | ✅ Audio never leaves the device (medical, legal, call centres)                                                                             | ⚠️ Audio is sent to a third party                                                    |
-| Cost     | Hardware only, no per-minute fee                                                                                                            | Pay per minute of audio                                                                |
-| Internet | Only once, to download weights (tiny 75 MB … large ~3 GB)                                                                                  | Every request                                                                          |
-| Speed    | Depends on GPU/CPU; faster-whisper int8 runs `small` in real time on CPU                                                                  | Fast, scales automatically                                                             |
-| Control  | Fine-tune for Egyptian Arabic, custom vocabulary                                                                                            | Fixed models, limited parameters                                                       |
-| Limits   | You manage hardware                                                                                                                         | File size limits (e.g. 25 MB per request on OpenAI)                                    |
+What works:
+- One model for both languages, including English words inside Arabic sentences.
+- Punctuated, readable output without a separate punctuation model.
+- Zero-shot: no Arabic labelled data needed to start.
+- Translation to English with `task="translate"` (large models only, see section 9).
 
-**Rule of thumb**
+Limitations for Arabic:
 
-- Prototype, or small volume without sensitive data → **online API**.
-- Private data, offline sites, high volume, or dialect fine-tuning → **offline faster-whisper** (GPU) or **whisper.cpp** (CPU/edge).
-- Live captions → streaming wrappers (e.g. `whisper_streaming`, `WhisperLive`) with VAD and short chunks.
+| Issue | Cause | Fix |
+|---|---|---|
+| Much lower accuracy than English | Small share of the training data | Use large-v3 / turbo, or fine-tune |
+| Dialects (Egyptian, Gulf, Levantine) | Data skews to MSA and news-style speech | Fine-tune on dialect data (Common Voice, MGB-3, own data) |
+| Dialect phonetics | Egyptian ج is pronounced g, ث often as س | Fine-tuning, or lexicon correction |
+| No diacritics | Web transcripts rarely have them | Post-processing diacritisation model |
+| Spelling variants (ة/ه, أ/ا, ى/ي) | Noisy web labels | Normalise before WER |
+| English loanwords | Model writes them in Latin script, references often in Arabic script | Normalise or transliterate before scoring |
+| Language mis-detection on short clips | Too little audio to decide | Always pass `language="ar"` |
+
+Evaluation: report WER and CER together for Arabic. One wrong letter makes the whole word wrong, so WER alone overstates the error.
+
+Normalisation used in the notebook: remove tashkeel and tatweel, unify ا/أ/إ/آ, ة to ه, ى to ي, remove punctuation.
 
 ---
 
-## 9. Quick Comparison & Mental Model
+## 8. Deployment: offline vs online
+
+| | Offline | Online (API) |
+|---|---|---|
+| Tools | `openai-whisper`, faster-whisper (CTranslate2), whisper.cpp, HF `transformers` | Groq, Hugging Face Inference, OpenAI (`whisper-1`, `gpt-4o-transcribe`), Azure |
+| Privacy | Audio stays on the machine | Audio sent to a third party |
+| Cost | Hardware only | Per minute of audio (after free tiers) |
+| Internet | Only to download weights once | Every request |
+| Control | Fine-tuning, custom decoding settings | Fixed models, limited parameters |
+| Limits | You manage the hardware | Request size limits (e.g. 25 MB on OpenAI) |
+
+Running fully offline with faster-whisper: download the model once, then load with `local_files_only=True` and `HF_HUB_OFFLINE=1`. To deploy on a machine with no internet, copy `~/.cache/huggingface` over.
+
+Notes from the notebook:
+- faster-whisper needs cuBLAS 12 and cuDNN 9 on GPU. If Colab's torch ships other versions, install `nvidia-cublas-cu12` and `nvidia-cudnn-cu12==9.*` and preload them.
+- Newer PyAV versions break faster-whisper's file decoding (`metadata_errors` error). Pass a decoded 16 kHz numpy array instead of a path.
+
+Choosing:
+- Prototype or low volume, non-sensitive audio: online API.
+- Private data, no internet, high volume, or dialect fine-tuning: faster-whisper on GPU, or whisper.cpp on CPU / edge.
+- Live captions: streaming wrappers (`whisper_streaming`, `WhisperLive`) with VAD and short chunks.
+
+---
+
+## 9. Results on my data
+
+Test data: a 69.5 s Egyptian Arabic clip (with English product words) and a 5.9 s English LibriSpeech sample. Run on Colab with a T4 GPU.
+
+### Model size (openai-whisper, GPU, greedy)
+
+| Model | EN WER | AR WER | AR CER | AR speed (x real time) |
+|---|---|---|---|---|
+| tiny | 0.059 | 0.88 | 0.49 | 8.1 |
+| base | 0.059 | 0.76 | 0.27 | 14.8 |
+| small | 0.059 | 0.45 | 0.13 | 7.9 |
+| turbo | 0.059 | 0.24 | 0.11 | 14.6 |
+| tiny.en / base.en | 0.059 | - | - | - |
+
+### CPU vs GPU (faster-whisper, beam 5, VAD, Arabic clip)
+
+| Model | CPU int8 (x RT) | GPU fp16 (x RT) | WER CPU / GPU |
+|---|---|---|---|
+| tiny | 5.6 | 27.4 | 0.84 / 0.83 |
+| base | 3.6 | 12.2 | 0.69 / 0.76 |
+| small | 1.2 | 19.4 | 0.47 / 0.43 |
+| large-v3-turbo | - | 19.4 | - / 0.21 |
+
+### Online APIs (Arabic clip)
+
+| Provider / model | Time | WER |
+|---|---|---|
+| Groq whisper-large-v3 | 1.8 s | 0.21 |
+| Groq whisper-large-v3-turbo | 0.8 s | 0.24 |
+
+### Findings
+- English is at the ceiling for every model (1 wrong word out of 17), so this sample can't separate them.
+- Arabic WER drops from 0.88 to 0.21 with model size. Size matters much more for Arabic than for English.
+- Turbo decodes as fast as base on GPU while being about 3x more accurate, because it only has 4 decoder layers.
+- int8 on CPU loses almost nothing in accuracy compared to fp16 on GPU.
+- faster-whisper with beam 5 + VAD (0.21) beat openai-whisper greedy (0.24) on the same turbo weights.
+- The APIs give the same WER as the local runs because they serve the same open weights. Online vs offline is a choice about privacy, cost and hardware, not accuracy.
+- `translate` with `base` produced unrelated hallucinated text. Dialect-to-English translation needs large or turbo.
+- Most of the remaining ~0.21 WER is dialect spelling (الحجز decoded as الحقز) and English words in Latin script, not misheard audio.
+
+---
+
+## 10. Summary
 
 ```text
-          ┌──────────── Whisper ────────────┐
-audio ──► log-Mel ──► Encoder ──► H_audio ──┐
-                                            ▼ (cross-attn K,V)
-prefix tokens ─────────────────────► Decoder ──► text, timestamps, language
+audio -> log-Mel (80 x 3000) -> Encoder -> H_audio (1500 x d)
+                                               | cross-attention (K, V)
+prefix tokens ------------------------------> Decoder -> text, timestamps, language
 ```
 
-**5 things to remember**
-
-1. 30 s window → 80 × 3000 Mel → 1500 audio vectors.
-2. Encoder–decoder Transformer; the decoder "listens" through cross-attention.
-3. Special tokens choose the language, the task and timestamps.
-4. Long audio is handled by a sliding window, temperature fallback and no-speech checks to limit hallucination.
-5. Arabic works but needs `large-v3`/`turbo`, `language="ar"` and ideally dialect fine-tuning. Run offline for privacy, online for convenience.
-
----
-
-## 10. ✍️ Ready-to-adapt LinkedIn Post (Arabic)
-
-> **Whisper: إزاي موديل واحد بيسمع ويكتب ١٠٠ لغة؟ 🎙️**
->
-> Whisper من OpenAI مش معماريّة جديدة… السرّ في **الداتا**: ٦٨٠ ألف ساعة صوت من الإنترنت بنصوصها (حتى لو فيها أخطاء).
->
-> 🔹 الصوت بيتقطع لـ ٣٠ ثانية ويتحول لـ Log-Mel Spectrogram (80×3000)
-> 🔹 الـ Encoder بيحوله لـ 1500 vector، والـ Decoder "بيسمع" عن طريق Cross-Attention
-> 🔹 Tokens خاصة بتحدد المهمة: `<|ar|><|transcribe|>` أو `<|translate|>` للإنجليزي
->
-> **ليه مفيد لينا كعرب؟**
-> ✅ عربي + إنجليزي في نفس الجملة (code-switching)
-> ✅ يشتغل **Offline** على جهازك (faster-whisper / whisper.cpp) → خصوصية كاملة
-> ✅ أو **Online** عبر API لو عايز سرعة من غير GPU
-> ⚠️ اللهجة المصري محتاجة Fine-tuning عشان دقة أعلى
->
-> 📄 الورقة: Robust Speech Recognition via Large-Scale Weak Supervision (arXiv:2212.04356)
->
-> #AI #SpeechRecognition #Whisper #Arabic_NLP
-
-*(Pair it with the cheat sheet image in `brand/whisper_cheatsheet.png`.)*
+1. Fixed 30 s window: 80 x 3000 Mel, 1500 encoder vectors.
+2. Standard encoder-decoder; the decoder reads the audio through cross-attention.
+3. Special tokens set the language, the task and timestamps.
+4. Long audio uses a sliding window, temperature fallback and no-speech checks.
+5. For Arabic: use turbo or large-v3, set `language="ar"`, report CER with WER, and fine-tune for dialects.
